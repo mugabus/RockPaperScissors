@@ -3,13 +3,13 @@
 
 import { useState } from "react";
 import { ethers } from "ethers";
-import Card from "@/components/Card";
-import Button from "@/components/Button";
-import Input from "@/components/Input";
-import Label from "@/components/Label";
+import Card from "./components/Card";
+import Button from "./components/Button";
+import Input from "./components/Input";
+import Label from "./components/Label";
 
 // Replace this with your deployed contract address and ABI
-const CONTRACT_ADDRESS = "0xYourContractAddressHere";
+const CONTRACT_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
 const CONTRACT_ABI = [
   "function createGame(bytes32 _hashedMove) external payable",
   "function joinGame(uint _gameId, uint8 _move) external payable",
