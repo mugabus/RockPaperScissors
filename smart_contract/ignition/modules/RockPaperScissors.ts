@@ -8,7 +8,7 @@ import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
 const RockPaperScissorsModule = buildModule("RockPaperScissorsModule", (m) => {
  
 
-  const rockPaperScissors = m.contract("Lock", [], {
+  const rockPaperScissors = m.contract("RockPaperScissors", [], {
     
   });
 
