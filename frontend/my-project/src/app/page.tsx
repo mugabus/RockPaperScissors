@@ -1,4 +1,3 @@
-// app/page.tsx
 "use client";
 
 import { useState } from "react";
@@ -25,45 +24,82 @@ export default function Home() {
   const [status, setStatus] = useState("");
 
   async function getProviderAndContract() {
-    if (!window.ethereum) throw new Error("Please install MetaMask");
+    if (typeof window === "undefined" || typeof window.ethereum === "undefined") {
+      alert("MetaMask is not installed. Please install it to use this DApp.");
+      throw new Error("MetaMask is not installed");
+    }
+
     const provider = new ethers.BrowserProvider(window.ethereum);
     const signer = await provider.getSigner();
     const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
     return { contract, signer };
   }
 
+  async function connectWallet() {
+    try {
+      if (typeof window.ethereum === "undefined") {
+        alert("MetaMask is not installed!");
+        return;
+      }
+      await window.ethereum.request({ method: "eth_requestAccounts" });
+      setStatus("Wallet connected");
+    } catch (error) {
+      console.error("Wallet connection failed", error);
+      setStatus("Wallet connection failed");
+    }
+  }
+
   async function handleCreateGame() {
-    setStatus("Creating game...");
-    const { contract } = await getProviderAndContract();
-    const hashedMove = await contract.getHashedMove(parseInt(move), secret);
-    const tx = await contract.createGame(hashedMove, {
-      value: ethers.parseEther(bet),
-    });
-    await tx.wait();
-    setStatus("Game created. Share your game ID.");
+    try {
+      setStatus("Creating game...");
+      const { contract } = await getProviderAndContract();
+      const hashedMove = await contract.getHashedMove(parseInt(move), secret);
+      const tx = await contract.createGame(hashedMove, {
+        value: ethers.parseEther(bet),
+      });
+      await tx.wait();
+      setStatus("Game created. Share your game ID.");
+    } catch (error) {
+      console.error(error);
+      setStatus("Error creating game.");
+    }
   }
 
   async function handleJoinGame() {
-    setStatus("Joining game...");
-    const { contract } = await getProviderAndContract();
-    const tx = await contract.joinGame(parseInt(gameId), parseInt(move), {
-      value: ethers.parseEther(bet),
-    });
-    await tx.wait();
-    setStatus("Joined game successfully.");
+    try {
+      setStatus("Joining game...");
+      const { contract } = await getProviderAndContract();
+      const tx = await contract.joinGame(parseInt(gameId), parseInt(move), {
+        value: ethers.parseEther(bet),
+      });
+      await tx.wait();
+      setStatus("Joined game successfully.");
+    } catch (error) {
+      console.error(error);
+      setStatus("Error joining game.");
+    }
   }
 
   async function handleRevealMove() {
-    setStatus("Revealing move...");
-    const { contract } = await getProviderAndContract();
-    const tx = await contract.revealMove(parseInt(gameId), parseInt(move), secret);
-    await tx.wait();
-    setStatus("Move revealed.");
+    try {
+      setStatus("Revealing move...");
+      const { contract } = await getProviderAndContract();
+      const tx = await contract.revealMove(parseInt(gameId), parseInt(move), secret);
+      await tx.wait();
+      setStatus("Move revealed.");
+    } catch (error) {
+      console.error(error);
+      setStatus("Error revealing move.");
+    }
   }
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-4 bg-gradient-to-b from-purple-900 to-indigo-900 text-white">
-      <h1 className="text-4xl font-bold mb-6">Rock Paper Scissors</h1>
+      <h1 className="text-4xl font-bold mb-4">Rock Paper Scissors</h1>
+      <Button onClick={connectWallet} className="mb-4">
+        Connect Wallet
+      </Button>
+
       <div className="grid gap-6 grid-cols-1 md:grid-cols-3">
         <Card>
           <Label>Move (0: Rock, 1: Paper, 2: Scissors)</Label>
@@ -95,6 +131,7 @@ export default function Home() {
           <Button onClick={handleRevealMove}>Reveal Move</Button>
         </Card>
       </div>
+
       <p className="mt-6 text-lg text-yellow-300 font-semibold">{status}</p>
     </main>
   );
