@@ -1,103 +1,101 @@
-import Image from "next/image";
+// app/page.tsx
+"use client";
+
+import { useState } from "react";
+import { ethers } from "ethers";
+import Card from "@/components/Card";
+import Button from "@/components/Button";
+import Input from "@/components/Input";
+import Label from "@/components/Label";
+
+// Replace this with your deployed contract address and ABI
+const CONTRACT_ADDRESS = "0xYourContractAddressHere";
+const CONTRACT_ABI = [
+  "function createGame(bytes32 _hashedMove) external payable",
+  "function joinGame(uint _gameId, uint8 _move) external payable",
+  "function revealMove(uint _gameId, uint8 _move, string memory _secret) external",
+  "function getHashedMove(uint8 _move, string memory _secret) public pure returns (bytes32)"
+];
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [secret, setSecret] = useState("");
+  const [move, setMove] = useState("0");
+  const [bet, setBet] = useState("0.01");
+  const [gameId, setGameId] = useState("");
+  const [status, setStatus] = useState("");
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+  async function getProviderAndContract() {
+    if (!window.ethereum) throw new Error("Please install MetaMask");
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    const signer = await provider.getSigner();
+    const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+    return { contract, signer };
+  }
+
+  async function handleCreateGame() {
+    setStatus("Creating game...");
+    const { contract } = await getProviderAndContract();
+    const hashedMove = await contract.getHashedMove(parseInt(move), secret);
+    const tx = await contract.createGame(hashedMove, {
+      value: ethers.parseEther(bet),
+    });
+    await tx.wait();
+    setStatus("Game created. Share your game ID.");
+  }
+
+  async function handleJoinGame() {
+    setStatus("Joining game...");
+    const { contract } = await getProviderAndContract();
+    const tx = await contract.joinGame(parseInt(gameId), parseInt(move), {
+      value: ethers.parseEther(bet),
+    });
+    await tx.wait();
+    setStatus("Joined game successfully.");
+  }
+
+  async function handleRevealMove() {
+    setStatus("Revealing move...");
+    const { contract } = await getProviderAndContract();
+    const tx = await contract.revealMove(parseInt(gameId), parseInt(move), secret);
+    await tx.wait();
+    setStatus("Move revealed.");
+  }
+
+  return (
+    <main className="flex min-h-screen flex-col items-center justify-center p-4 bg-gradient-to-b from-purple-900 to-indigo-900 text-white">
+      <h1 className="text-4xl font-bold mb-6">Rock Paper Scissors</h1>
+      <div className="grid gap-6 grid-cols-1 md:grid-cols-3">
+        <Card>
+          <Label>Move (0: Rock, 1: Paper, 2: Scissors)</Label>
+          <Input value={move} onChange={(e) => setMove(e.target.value)} />
+          <Label>Secret</Label>
+          <Input value={secret} onChange={(e) => setSecret(e.target.value)} />
+          <Label>Bet Amount (ETH)</Label>
+          <Input value={bet} onChange={(e) => setBet(e.target.value)} />
+          <Button onClick={handleCreateGame}>Create Game</Button>
+        </Card>
+
+        <Card>
+          <Label>Game ID</Label>
+          <Input value={gameId} onChange={(e) => setGameId(e.target.value)} />
+          <Label>Move (0: Rock, 1: Paper, 2: Scissors)</Label>
+          <Input value={move} onChange={(e) => setMove(e.target.value)} />
+          <Label>Bet Amount (ETH)</Label>
+          <Input value={bet} onChange={(e) => setBet(e.target.value)} />
+          <Button onClick={handleJoinGame}>Join Game</Button>
+        </Card>
+
+        <Card>
+          <Label>Game ID</Label>
+          <Input value={gameId} onChange={(e) => setGameId(e.target.value)} />
+          <Label>Move</Label>
+          <Input value={move} onChange={(e) => setMove(e.target.value)} />
+          <Label>Secret</Label>
+          <Input value={secret} onChange={(e) => setSecret(e.target.value)} />
+          <Button onClick={handleRevealMove}>Reveal Move</Button>
+        </Card>
+      </div>
+      <p className="mt-6 text-lg text-yellow-300 font-semibold">{status}</p>
+    </main>
   );
 }
