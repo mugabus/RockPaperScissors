@@ -54,7 +54,8 @@ Bash
 npm install
 Frontend Directory:
 Bash
-cd frontend/my-project/ # Navigate to your frontend project folder
+
+consider the project folder:here is the frontend part plz
 npm install
 cd ../../ # Go back to the root directory of the DApp
 ▶️ Running the DApp
